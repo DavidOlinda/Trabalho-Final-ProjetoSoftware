@@ -1,0 +1,48 @@
+@startuml DE-Agendamento
+
+title Diagrama de Estados — Agendamento
+
+skinparam backgroundColor white
+skinparam stateBorderColor #6c8ebf
+skinparam stateBackgroundColor #dae8fc
+
+[*] -down-> PENDENTE : Cliente cria agendamento /\nSistema verifica disponibilidade
+
+state PENDENTE {
+  [*] -down-> AguardandoConfirmacao
+  AguardandoConfirmacao : Horário reservado\nAguardando confirmação
+}
+
+PENDENTE -down-> CONFIRMADO : Recepcionista confirma /\nSistema bloqueia horário\nNotificação enviada ao cliente
+
+PENDENTE -right-> CANCELADO : Cliente cancela /\nSistema libera horário\nNotificação enviada
+
+CONFIRMADO -down-> EM_ANDAMENTO : Profissional inicia atendimento /\nSistema registra hora inicio
+
+state CONFIRMADO {
+  [*] -down-> AguardandoAtendimento
+  AguardandoAtendimento : Horário confirmado\nAguardando data do atendimento
+}
+
+CONFIRMADO -right-> CANCELADO : Cliente cancela até 2h antes /\nSistema libera horário\nNotificação enviada
+
+CONFIRMADO -left-> REAGENDADO : Cliente solicita reagendamento /\nNovo horário verificado
+
+REAGENDADO -down-> CONFIRMADO : Novo horário confirmado /\nNotificação enviada ao cliente
+REAGENDADO -right-> CANCELADO : Reagendamento não confirmado
+
+state EM_ANDAMENTO {
+  [*] -down-> ServicosEmExecucao
+  ServicosEmExecucao -down-> ServicosRegistrados : Profissional registra serviços realizados
+}
+
+EM_ANDAMENTO -down-> AGUARDANDO_PAGAMENTO : Profissional finaliza atendimento /\nSistema calcula valor total
+
+AGUARDANDO_PAGAMENTO -down-> CONCLUIDO : Pagamento registrado /\nRecibo emitido\nHistórico atualizado
+
+AGUARDANDO_PAGAMENTO -right-> CANCELADO : Pagamento não efetuado /\nAtendimento cancelado
+
+CONCLUIDO -down-> [*]
+CANCELADO -down-> [*]
+
+@enduml

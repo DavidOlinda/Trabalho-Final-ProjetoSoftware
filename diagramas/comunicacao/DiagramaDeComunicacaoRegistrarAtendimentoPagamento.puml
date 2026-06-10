@@ -1,0 +1,51 @@
+@startuml COM-UC03-RegistrarAtendimentoPagamento
+
+title Diagrama de Comunicação — UC-03: Registrar Atendimento e Pagamento
+
+skinparam objectBackgroundColor #dae8fc
+skinparam objectBorderColor #6c8ebf
+skinparam nodesep 150
+skinparam ranksep 150
+
+object "pro:Profissional" as PRO
+object "rec:Recepcionista" as REC
+object "ctr:AtendimentoController" as CTR
+object "atS:AtendimentoService" as ATS
+object "paS:PagamentoService" as PAS
+object "ntS:NotificacaoService" as NTS
+object "db:PostgreSQL" as DB
+
+PRO -down- CTR
+REC -down- CTR
+
+CTR -down- ATS
+CTR -down- PAS
+
+ATS -down- DB
+PAS -down- DB
+PAS -right- NTS
+
+PRO -[hidden]right- REC
+
+note on link
+  1. iniciarAtendimento()
+end note
+
+PRO -down- CTR : 1. iniciarAtendimento()
+CTR -down- ATS : 2. abrirAtendimento()
+ATS -down- DB : 3. UPDATE EM_ANDAMENTO
+
+PRO -down- CTR : 4. registrarServicos()
+CTR -down- ATS : 5. salvarServicos()
+ATS -down- DB : 6. INSERT atendimento_servicos
+
+PRO -down- CTR : 7. finalizarAtendimento()
+CTR -down- ATS : 8. concluirAtendimento()
+ATS -down- DB : 9. UPDATE CONCLUIDO
+
+REC -down- CTR : 10. registrarPagamento()
+CTR -down- PAS : 11. processarPagamento()
+PAS -down- DB : 12. INSERT pagamentos
+PAS -right- NTS : 13. enviarComprovante()
+
+@enduml

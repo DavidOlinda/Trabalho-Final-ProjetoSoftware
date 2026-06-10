@@ -1,0 +1,85 @@
+@startuml ARQ-UML-Arquitetura
+
+title BeautyFlow — Diagrama de Arquitetura
+
+skinparam componentStyle uml2
+
+package "Cliente" {
+  [Navegador Web] as WEB
+  [App Mobile] as MOB
+}
+
+package "Servidor de Aplicação" {
+  [API Gateway] as GW
+  
+  package "Controllers" {
+    [AgendamentoController] as AGC
+    [ProfissionalController] as PRC
+    [AtendimentoController] as ATC
+    [RelatorioController] as RLC
+    [AuthController] as AUC
+  }
+
+  package "Services" {
+    [AgendamentoService] as AGS
+    [ProfissionalService] as PRS
+    [AtendimentoService] as ATS
+    [RelatorioService] as RLS
+    [NotificacaoService] as NTS
+    [PagamentoService] as PAS
+  }
+
+  package "Repositories" {
+    [AgendamentoRepository] as AGR
+    [ProfissionalRepository] as PRR
+    [ClienteRepository] as CLR
+    [ServicoRepository] as SVR
+  }
+}
+
+package "Infraestrutura" {
+  database "PostgreSQL" as DB
+  [Cache Redis] as CACHE
+}
+
+package "Serviços Externos" {
+  [Gateway Pagamento] as PAG
+  [Serviço Notificação] as NOT
+}
+
+WEB --> GW : HTTP/HTTPS
+MOB --> GW : HTTP/HTTPS
+
+GW --> AUC
+GW --> AGC
+GW --> PRC
+GW --> ATC
+GW --> RLC
+
+AGC --> AGS
+PRC --> PRS
+ATC --> ATS
+RLC --> RLS
+
+AGS --> AGR
+AGS --> NTS
+AGS --> PAS
+PRS --> PRR
+ATS --> AGR
+ATS --> NTS
+ATS --> PAS
+RLS --> AGR
+RLS --> CLR
+
+AGR --> DB
+PRR --> DB
+CLR --> DB
+SVR --> DB
+
+AGS --> CACHE
+AUC --> CACHE
+
+NTS --> NOT
+PAS --> PAG
+
+@enduml

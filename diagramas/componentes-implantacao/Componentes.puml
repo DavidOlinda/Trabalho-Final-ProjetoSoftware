@@ -1,0 +1,103 @@
+@startuml DC-Componentes
+
+title BeautyFlow — Diagrama de Componentes
+
+skinparam componentStyle uml2
+skinparam linetype ortho
+
+package "Interface Layer" {
+  [WebApp\nReact.js] as WEB
+  [MobileApp\nReact Native] as MOB
+}
+
+package "API Layer" {
+
+  [API Gateway] as GW
+
+  package "Auth" {
+    [AuthController] as AUC
+    [JWTService] as JWT
+  }
+
+  package "Agendamento" {
+    [AgendamentoController] as AGC
+    [AgendamentoService] as AGS
+    [AgendamentoRepository] as AGR
+  }
+
+  package "Profissional" {
+    [ProfissionalController] as PRC
+    [ProfissionalService] as PRS
+    [ProfissionalRepository] as PRR
+  }
+
+  package "Atendimento" {
+    [AtendimentoController] as ATC
+    [AtendimentoService] as ATS
+    [AtendimentoRepository] as ATR
+  }
+
+  package "Relatorio" {
+    [RelatorioController] as RLC
+    [RelatorioService] as RLS
+  }
+
+  package "Notificacao" {
+    [NotificacaoService] as NTS
+  }
+
+  package "Pagamento" {
+    [PagamentoService] as PAS
+    [PagamentoRepository] as PAR
+  }
+}
+
+package "Data Layer" {
+  database "PostgreSQL" as DB
+  [Redis Cache] as CACHE
+}
+
+package "Servicos Externos" {
+  [Gateway de Pagamento] as PGEXT
+  [Servico de Email/SMS] as NOTEXT
+}
+
+WEB -down-> GW
+MOB -down-> GW
+
+GW -down-> AUC
+GW -down-> AGC
+GW -down-> PRC
+GW -down-> ATC
+GW -down-> RLC
+
+AUC -down-> JWT
+JWT -right-> CACHE
+
+AGC -down-> AGS
+AGS -down-> AGR
+AGS -right-> NTS
+AGS -right-> PAS
+
+PRC -down-> PRS
+PRS -down-> PRR
+
+ATC -down-> ATS
+ATS -down-> ATR
+ATS -right-> NTS
+ATS -right-> PAS
+
+RLC -down-> RLS
+RLS -left-> AGR
+RLS -left-> ATR
+
+AGR -down-> DB
+PRR -down-> DB
+ATR -down-> DB
+PAR -down-> DB
+
+PAS -down-> PAR
+PAS -right-> PGEXT
+NTS -right-> NOTEXT
+
+@enduml

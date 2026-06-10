@@ -1,0 +1,40 @@
+@startuml DE-Servico
+
+title Diagrama de Estados — Serviço
+
+skinparam backgroundColor white
+skinparam stateBorderColor #6c8ebf
+skinparam stateBackgroundColor #dae8fc
+
+[*] -down-> CADASTRADO : Administrador cadastra serviço /\nNome, descrição, duração e preço definidos
+
+CADASTRADO -down-> ATIVO : Administrador ativa /\nServiço visível para agendamentos
+
+state ATIVO {
+  [*] -down-> PrecoNormal
+  PrecoNormal : Preço padrão\nvisível ao cliente
+  PrecoNormal -right-> PrecoAtualizado : Administrador atualiza preço /\nNovo preço aplicado
+  PrecoAtualizado -left-> PrecoNormal : Preço revertido
+}
+
+ATIVO -right-> EM_PROMOCAO : Administrador aplica promoção /\nPreço promocional definido\nPeríodo estabelecido
+
+state EM_PROMOCAO {
+  [*] -down-> PromocaoAtiva
+  PromocaoAtiva : Desconto aplicado\nvisível ao cliente
+  PromocaoAtiva -down-> PromocaoExpirando : Próximo ao fim\ndo período promocional
+}
+
+EM_PROMOCAO -left-> ATIVO : Promoção encerrada /\nPreço normal restaurado
+
+ATIVO -down-> SUSPENSO : Administrador suspende temporariamente /\nServiço indisponível para agendamentos
+
+SUSPENSO -up-> ATIVO : Administrador reativa /\nServiço disponível novamente
+
+SUSPENSO -down-> INATIVO : Administrador desativa /\nServiço removido do catálogo
+
+ATIVO -right-> INATIVO : Administrador desativa /\nServiço removido do catálogo
+
+INATIVO -down-> [*]
+
+@enduml

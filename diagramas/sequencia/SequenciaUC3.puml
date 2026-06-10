@@ -1,0 +1,132 @@
+@startuml SD-UC03-RegistrarAtendimentoPagamento
+
+title UC-03: Registrar Atendimento e Pagamento
+
+actor "Profissional" as PRO
+actor "Recepcionista" as REC
+participant ":Interface\nWeb/App" as UI
+participant ":AtendimentoController" as CTR
+participant ":AgendamentoService" as AGD
+participant ":AtendimentoService" as ATD
+participant ":PagamentoService" as PAG
+participant ":NotificacaoService" as NTF
+database ":Banco de Dados" as DB
+
+activate PRO
+
+PRO -> UI : acessarAgendaDoDia()
+activate UI
+
+UI -> CTR : buscarAgendaProfissional(profissionalId, data)
+activate CTR
+
+CTR -> AGD : listarAgendamentosDoDia(profissionalId, data)
+activate AGD
+
+AGD -> DB : SELECT * FROM agendamentos\nWHERE profissional_id = :id\nAND DATE(data) = :data\nAND status = 'confirmado'
+activate DB
+DB --> AGD : agendamentos
+deactivate DB
+
+AGD --> CTR : listaAgendamentos
+deactivate AGD
+
+CTR --> UI : exibirAgenda(listaAgendamentos)
+deactivate CTR
+
+UI --> PRO : agenda do dia com horários
+PRO -> UI : iniciarAtendimento(agendamentoId)
+
+UI -> CTR : iniciarAtendimento(agendamentoId)
+activate CTR
+
+CTR -> ATD : abrirAtendimento(agendamentoId)
+activate ATD
+
+ATD -> DB : UPDATE agendamentos SET status = 'em_andamento',\nhora_inicio = NOW()\nWHERE id = :agendamentoId
+activate DB
+DB --> ATD : ok
+deactivate DB
+
+ATD --> CTR : atendimentoIniciado
+deactivate ATD
+
+CTR --> UI : exibirFormularioAtendimento()
+deactivate CTR
+
+PRO -> UI : registrarServicosRealizados(servicosIds, observacoes)
+UI -> CTR : salvarServicosRealizados(agendamentoId, servicosIds, observacoes)
+activate CTR
+
+CTR -> ATD : registrarServicos(agendamentoId, servicosIds, observacoes)
+activate ATD
+
+ATD -> DB : INSERT INTO atendimento_servicos\n(agendamento_id, servico_id, observacao)
+activate DB
+DB --> ATD : ok
+deactivate DB
+
+ATD -> DB : SELECT SUM(preco) FROM servicos\nWHERE id IN (:servicosIds)
+activate DB
+DB --> ATD : valorTotal
+deactivate DB
+
+ATD --> CTR : servicosRegistrados(valorTotal)
+deactivate ATD
+
+CTR --> UI : exibirResumoAtendimento(valorTotal)
+deactivate CTR
+
+PRO -> UI : finalizarAtendimento(agendamentoId)
+UI -> CTR : finalizarAtendimento(agendamentoId)
+activate CTR
+
+CTR -> ATD : concluirAtendimento(agendamentoId)
+activate ATD
+
+ATD -> DB : UPDATE agendamentos SET status = 'concluido',\nhora_fim = NOW() WHERE id = :agendamentoId
+activate DB
+DB --> ATD : ok
+deactivate DB
+
+ATD --> CTR : atendimentoConcluido
+deactivate ATD
+deactivate CTR
+
+deactivate PRO
+
+activate REC
+REC -> UI : registrarPagamento(agendamentoId, formaPagamento, valor)
+
+UI -> CTR : processarPagamento(agendamentoId, formaPagamento, valor)
+activate CTR
+
+CTR -> PAG : validarPagamento(valor, valorTotal)
+activate PAG
+PAG --> CTR : pagamentoValido
+deactivate PAG
+
+CTR -> PAG : salvarPagamento(agendamentoId, formaPagamento, valor)
+activate PAG
+
+PAG -> DB : INSERT INTO pagamentos\n(agendamento_id, forma_pagamento, valor, data_pagamento)
+activate DB
+DB --> PAG : pagamentoId
+deactivate DB
+
+PAG --> CTR : pagamentoRegistrado(pagamentoId)
+deactivate PAG
+
+CTR -> NTF : enviarComprovante(clienteId, pagamentoId)
+activate NTF
+NTF --> CTR : comprovanteEnviado
+deactivate NTF
+
+CTR --> UI : exibirRecibo(pagamentoId)
+deactivate CTR
+
+UI --> REC : recibo gerado com sucesso
+deactivate UI
+deactivate REC
+
+@enduml

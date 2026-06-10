@@ -1,0 +1,55 @@
+@startuml DI-Implantacao
+
+title BeautyFlow — Diagrama de Implantação
+
+skinparam linetype ortho
+
+node "Dispositivo do Cliente" as CLIENT {
+  artifact "Navegador Web\n(Chrome, Firefox, Safari)" as BROWSER
+  artifact "App Mobile\n(iOS / Android)" as MOBILEAPP
+}
+
+node "CDN\n(Cloudflare)" as CDN {
+  artifact "Arquivos Estáticos\n(HTML, CSS, JS)" as STATIC
+}
+
+node "Servidor Web\n(Nginx)" as NGINX {
+  artifact "Proxy Reverso\ne Load Balancer" as PROXY
+}
+
+node "Servidor de Aplicação\n(Node.js — Express)" as APPSERVER {
+  artifact "API Gateway" as GW
+  artifact "Controllers" as CTRL
+  artifact "Services" as SVC
+  artifact "Repositories" as REPO
+}
+
+node "Servidor de Banco de Dados\n(PostgreSQL)" as DBSERVER {
+  database "beautyflow_db" as DB
+}
+
+node "Servidor de Cache\n(Redis)" as CACHESERVER {
+  artifact "Sessões JWT\ne Cache de Consultas" as CACHE
+}
+
+node "Servicos Externos" as EXT {
+  artifact "Gateway de Pagamento\n(Stripe / PagSeguro)" as PAG
+  artifact "Servico de Notificacao\n(SendGrid / Twilio)" as NOT
+}
+
+BROWSER -down-> CDN : HTTPS
+MOBILEAPP -down-> NGINX : HTTPS
+CDN -down-> NGINX : HTTPS
+
+NGINX -down-> APPSERVER : HTTP (interno)
+
+APPSERVER -down-> DBSERVER : TCP 
+APPSERVER -right-> CACHESERVER : TCP 
+APPSERVER -down-> EXT : HTTPS
+
+GW -down-> CTRL
+CTRL -down-> SVC
+SVC -down-> REPO
+REPO -down-> DB
+
+@enduml

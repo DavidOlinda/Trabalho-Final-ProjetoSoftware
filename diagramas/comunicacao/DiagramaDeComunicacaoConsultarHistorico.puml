@@ -1,0 +1,29 @@
+@startuml COM-UC04-ConsultarHistoricoRelatorios
+
+title Diagrama de Comunicação — UC-04: Consultar Histórico e Relatórios
+
+skinparam objectBackgroundColor #dae8fc
+skinparam objectBorderColor #6c8ebf
+skinparam nodesep 150
+skinparam ranksep 150
+
+object "cli:Cliente" as CLI
+object "adm:Administrador" as ADM
+object "ctr:RelatorioController" as CTR
+object "hsS:HistoricoService" as HSS
+object "rlS:RelatorioService" as RLS
+object "db:PostgreSQL" as DB
+
+CLI -down- CTR : 1. consultarHistorico()
+CTR -down- HSS : 2. buscarHistorico()
+HSS -down- DB : 3. SELECT agendamentos
+
+ADM -down- CTR : 4. gerarRelatorioFaturamento()
+CTR -down- RLS : 5. calcularFaturamento()
+RLS -down- DB : 6. SELECT pagamentos
+
+ADM -down- CTR : 7. gerarRelatorioDesempenho()
+CTR -down- RLS : 8. calcularDesempenho()
+RLS -down- DB : 9. SELECT atendimentos
+
+@enduml

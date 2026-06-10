@@ -1,0 +1,27 @@
+@startuml COM-UC01-AgendarServico
+
+title Diagrama de Comunicação — UC-01: Agendar Serviço
+
+skinparam objectBackgroundColor #dae8fc
+skinparam objectBorderColor #6c8ebf
+skinparam nodesep 80
+skinparam ranksep 80
+
+object "cli:Cliente" as CLI
+object "ctr:AgendamentoController" as CTR
+object "agS:AgendamentoService" as AGS
+object "agR:AgendamentoRepository" as AGR
+object "db:PostgreSQL" as DB
+object "ntS:NotificacaoService" as NTS
+
+CLI -right- CTR : 1. POST /agendamentos(dados)\n6. 201 CREATED: Agendamento
+
+CTR -down- AGS : 2. criarAgendamento(dados)\n5. Agendamento
+
+AGS -right- NTS : 3. enviarConfirmacao(clienteId)
+
+AGS -down- AGR : 3. save(agendamento)\n4. Agendamento
+
+AGR -down- DB : 4. INSERT INTO agendamentos\n5. agendamentoId
+
+@enduml

@@ -1,0 +1,138 @@
+@startuml MD-EsquemaBancoDados
+
+title Modelo de Dados — BeautyFlow
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+
+entity "clientes" as CLI {
+  * id : UUID <<PK>>
+  --
+  * nome : VARCHAR(100)
+  * email : VARCHAR(100)
+  * telefone : VARCHAR(20)
+  * cpf : VARCHAR(11)
+  * data_cadastro : TIMESTAMP
+}
+
+entity "profissionais" as PRO {
+  * id : UUID <<PK>>
+  --
+  * nome : VARCHAR(100)
+  * email : VARCHAR(100)
+  * telefone : VARCHAR(20)
+  * cpf : VARCHAR(11)
+  * ativo : BOOLEAN
+  * data_cadastro : TIMESTAMP
+}
+
+entity "servicos" as SVC {
+  * id : UUID <<PK>>
+  --
+  * nome : VARCHAR(100)
+  * descricao : TEXT
+  * duracao : INTEGER
+  * preco : DECIMAL(10,2)
+  * ativo : BOOLEAN
+}
+
+entity "profissional_servico" as PRVSVC {
+  * profissional_id : UUID <<PK, FK>>
+  * servico_id : UUID <<PK, FK>>
+}
+
+entity "horarios_disponiveis" as HOR {
+  * id : UUID <<PK>>
+  --
+  * profissional_id : UUID <<FK>>
+  * dia_semana : VARCHAR(20)
+  * hora_inicio : TIME
+  * hora_fim : TIME
+  * disponivel : BOOLEAN
+}
+
+entity "agendamentos" as AGD {
+  * id : UUID <<PK>>
+  --
+  * cliente_id : UUID <<FK>>
+  * profissional_id : UUID <<FK>>
+  * servico_id : UUID <<FK>>
+  * data : DATE
+  * hora : TIME
+  * status : VARCHAR(20)
+  * observacao : TEXT
+  * data_criacao : TIMESTAMP
+}
+
+entity "atendimentos" as ATD {
+  * id : UUID <<PK>>
+  --
+  * agendamento_id : UUID <<FK>>
+  * hora_inicio : TIMESTAMP
+  * hora_fim : TIMESTAMP
+  * observacoes : TEXT
+  * valor_total : DECIMAL(10,2)
+}
+
+entity "atendimento_servicos" as ATDSVC {
+  * atendimento_id : UUID <<PK, FK>>
+  * servico_id : UUID <<PK, FK>>
+  --
+  * observacao : TEXT
+}
+
+entity "pagamentos" as PAG {
+  * id : UUID <<PK>>
+  --
+  * agendamento_id : UUID <<FK>>
+  * valor : DECIMAL(10,2)
+  * forma_pagamento : VARCHAR(20)
+  * status : VARCHAR(20)
+  * data_pagamento : TIMESTAMP
+}
+
+entity "recibos" as REC {
+  * id : UUID <<PK>>
+  --
+  * pagamento_id : UUID <<FK>>
+  * data_emissao : TIMESTAMP
+  * valor_total : DECIMAL(10,2)
+  * descricao : TEXT
+}
+
+entity "usuarios" as USR {
+  * id : UUID <<PK>>
+  --
+  * login : VARCHAR(100)
+  * senha : VARCHAR(255)
+  * perfil : VARCHAR(20)
+  * ativo : BOOLEAN
+  * profissional_id : UUID <<FK>>
+}
+
+entity "relatorios" as REL {
+  * id : UUID <<PK>>
+  --
+  * tipo : VARCHAR(50)
+  * data_inicio : DATE
+  * data_fim : DATE
+  * data_geracao : TIMESTAMP
+  * gerado_por : UUID <<FK>>
+}
+
+CLI ||--o{ AGD : "realiza"
+PRO ||--o{ AGD : "atende"
+SVC ||--o{ AGD : "inclui"
+PRO ||--o{ PRVSVC : "oferece"
+SVC ||--o{ PRVSVC : "pertence"
+PRO ||--o{ HOR : "possui"
+AGD ||--|| ATD : "gera"
+ATD ||--o{ ATDSVC : "registra"
+SVC ||--o{ ATDSVC : "compoe"
+AGD ||--|| PAG : "gera"
+PAG ||--|| REC : "emite"
+USR ||--o| PRO : "vincula"
+USR ||--o{ REL : "gera"
+
+@enduml

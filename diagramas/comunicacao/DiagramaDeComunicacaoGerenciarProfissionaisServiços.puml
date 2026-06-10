@@ -1,0 +1,30 @@
+@startuml COM-UC02-GerenciarProfissionaisServicos
+
+title Diagrama de Comunicação — UC-02: Gerenciar Profissionais e Serviços
+
+skinparam objectBackgroundColor #dae8fc
+skinparam objectBorderColor #6c8ebf
+skinparam nodesep 150
+skinparam ranksep 150
+
+object "adm:Administrador" as ADM
+object "ctr:AdminController" as CTR
+object "prS:ProfissionalService" as PRS
+object "svS:ServicoService" as SVS
+object "viS:VinculoService" as VIS
+object "db:PostgreSQL" as DB
+
+ADM -right- CTR : 1. cadastrarProfissional()
+CTR -down- PRS : 2. salvarProfissional()
+PRS -down- DB : 3. INSERT profissionais
+
+CTR -down- SVS : 4. cadastrarServico()
+SVS -down- DB : 5. INSERT servicos
+
+CTR -down- VIS : 6. vincularServicoProfissional()
+VIS -down- DB : 7. INSERT profissional_servico
+
+CTR -down- SVS : 8. atualizarPreco()
+SVS -down- DB : 9. UPDATE servicos
+
+@enduml

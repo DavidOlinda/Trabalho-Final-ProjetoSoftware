@@ -1,0 +1,99 @@
+@startuml DSP-UC02-GerenciarProfissionaisServicos
+
+title Diagrama de Sequência de Projeto — UC-02: Gerenciar Profissionais e Serviços
+
+skinparam linetype ortho
+
+actor "Administrador" as ADM
+participant "AdminController" as CTR
+participant "ProfissionalService" as PRS
+participant "ServicoService" as SVS
+participant "VinculoService" as VIS
+participant "ProfissionalRepository" as PRR
+participant "ServicoRepository" as SVR
+participant "VinculoRepository" as VIR
+database "PostgreSQL" as DB
+
+activate ADM
+
+ADM -> CTR : POST /profissionais\n{nome, cpf, especialidades, horarios}
+activate CTR
+CTR -> PRS : cadastrarProfissional(dados)
+activate PRS
+PRS -> PRS : validarCPF(cpf)
+PRS -> PRR : save(profissional)
+activate PRR
+PRR -> DB : INSERT INTO profissionais(...)
+activate DB
+DB --> PRR : profissionalId
+deactivate DB
+PRR --> PRS : Profissional
+deactivate PRR
+PRS --> CTR : Profissional
+deactivate PRS
+CTR --> ADM : 201 CREATED: Profissional
+deactivate CTR
+
+ADM -> CTR : POST /servicos\n{nome, descricao, duracao, preco}
+activate CTR
+CTR -> SVS : cadastrarServico(dados)
+activate SVS
+SVS -> SVS : validarDados(dados)
+SVS -> SVR : save(servico)
+activate SVR
+SVR -> DB : INSERT INTO servicos(...)
+activate DB
+DB --> SVR : servicoId
+deactivate DB
+SVR --> SVS : Servico
+deactivate SVR
+SVS --> CTR : Servico
+deactivate SVS
+CTR --> ADM : 201 CREATED: Servico
+deactivate CTR
+
+ADM -> CTR : POST /profissionais/{id}/servicos\n{servicoId}
+activate CTR
+CTR -> VIS : vincularServicoProfissional\n(profissionalId, servicoId)
+activate VIS
+VIS -> VIR : findVinculo(profissionalId, servicoId)
+activate VIR
+VIR -> DB : SELECT * FROM profissional_servico\nWHERE profissional_id = :pid\nAND servico_id = :sid
+activate DB
+DB --> VIR : null
+deactivate DB
+VIR --> VIS : null
+deactivate VIR
+VIS -> VIR : save(vinculo)
+activate VIR
+VIR -> DB : INSERT INTO profissional_servico(...)
+activate DB
+DB --> VIR : ok
+deactivate DB
+VIR --> VIS : ok
+deactivate VIR
+VIS --> CTR : ok
+deactivate VIS
+CTR --> ADM : 201 CREATED: Vinculo
+deactivate CTR
+
+ADM -> CTR : PATCH /servicos/{id}\n{novoPreco}
+activate CTR
+CTR -> SVS : atualizarPreco(servicoId, novoPreco)
+activate SVS
+SVS -> SVR : updatePreco(servicoId, novoPreco)
+activate SVR
+SVR -> DB : UPDATE servicos\nSET preco = :novoPreco\nWHERE id = :servicoId
+activate DB
+DB --> SVR : ok
+deactivate DB
+SVR --> SVS : Servico
+deactivate SVR
+SVS --> CTR : Servico
+deactivate SVS
+CTR --> ADM : 200 OK: Servico
+deactivate CTR
+
+deactivate ADM
+
+@enduml

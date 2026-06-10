@@ -1,0 +1,47 @@
+@startuml UC-BeautyFlow
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Cliente" as CLI
+actor "Recepcionista" as REC
+actor "Profissional" as PRO
+actor "Administrador" as ADM
+
+rectangle "BeautyFlow" {
+
+  usecase "UC-01\nAgendar Serviço" as UC01
+  usecase "UC-02\nGerenciar Profissionais\ne Serviços" as UC02
+  usecase "UC-03\nRegistrar Atendimento\ne Pagamento" as UC03
+  usecase "UC-04\nConsultar Histórico\ne Relatórios" as UC04
+
+  usecase "Cancelar Agendamento" as UC01a
+  usecase "Verificar Disponibilidade" as UC01b
+  usecase "Cadastrar Cliente" as UC01c
+  usecase "Cadastrar Profissional" as UC02a
+  usecase "Gerenciar Serviços e Preços" as UC02b
+  usecase "Registrar Pagamento" as UC03a
+  usecase "Finalizar Atendimento" as UC03b
+
+  UC01 ..> UC01b : <<include>>
+  UC01 ..> UC01c : <<extend>>
+  UC01 ..> UC01a : <<extend>>
+  UC02 ..> UC02a : <<include>>
+  UC02 ..> UC02b : <<include>>
+  UC03 ..> UC03b : <<include>>
+  UC03 ..> UC03a : <<include>>
+}
+
+CLI --> UC01
+CLI --> UC04
+
+REC --> UC01
+REC --> UC03
+
+PRO --> UC03
+PRO --> UC04
+
+ADM --> UC02
+ADM --> UC04
+
+@enduml

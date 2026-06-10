@@ -1,0 +1,95 @@
+@startuml DSP-UC01-AgendarServico
+
+title Diagrama de Sequência de Projeto — UC-01: Agendar Serviço
+
+skinparam linetype ortho
+
+actor "Cliente" as CLI
+participant "AgendamentoController" as CTR
+participant "AgendamentoService" as AGS
+participant "ServicoService" as SVS
+participant "ProfissionalService" as PRS
+participant "NotificacaoService" as NTS
+participant "AgendamentoRepository" as AGR
+participant "ServicoRepository" as SVR
+participant "ProfissionalRepository" as PRR
+database "PostgreSQL" as DB
+
+activate CLI
+
+CLI -> CTR : GET /servicos
+activate CTR
+CTR -> SVS : listarServicosAtivos()
+activate SVS
+SVS -> SVR : findAllAtivos()
+activate SVR
+SVR -> DB : SELECT * FROM servicos\nWHERE ativo = true
+activate DB
+DB --> SVR : List<Servico>
+deactivate DB
+SVR --> SVS : List<Servico>
+deactivate SVR
+SVS --> CTR : List<Servico>
+deactivate SVS
+CTR --> CLI : 200 OK: List<Servico>
+deactivate CTR
+
+CLI -> CTR : GET /profissionais?servicoId={id}
+activate CTR
+CTR -> PRS : listarPorServico(servicoId)
+activate PRS
+PRS -> PRR : findByServico(servicoId)
+activate PRR
+PRR -> DB : SELECT p.* FROM profissionais p\nJOIN profissional_servico ps\nON ps.profissional_id = p.id\nWHERE ps.servico_id = :servicoId
+activate DB
+DB --> PRR : List<Profissional>
+deactivate DB
+PRR --> PRS : List<Profissional>
+deactivate PRR
+PRS --> CTR : List<Profissional>
+deactivate PRS
+CTR --> CLI : 200 OK: List<Profissional>
+deactivate CTR
+
+CLI -> CTR : GET /disponibilidade?profissionalId={id}&data={data}
+activate CTR
+CTR -> AGS : verificarDisponibilidade(profissionalId, data)
+activate AGS
+AGS -> AGR : findHorariosLivres(profissionalId, data)
+activate AGR
+AGR -> DB : SELECT horario FROM agenda\nWHERE profissional_id = :id\nAND data = :data\nAND status = 'disponivel'
+activate DB
+DB --> AGR : List<HorarioDisponivel>
+deactivate DB
+AGR --> AGS : List<HorarioDisponivel>
+deactivate AGR
+AGS --> CTR : List<HorarioDisponivel>
+deactivate AGS
+CTR --> CLI : 200 OK: List<HorarioDisponivel>
+deactivate CTR
+
+CLI -> CTR : POST /agendamentos\n{clienteId, servicoId,\nprofissionalId, data, hora}
+activate CTR
+CTR -> AGS : criarAgendamento(dadosAgendamento)
+activate AGS
+AGS -> AGS : validarDisponibilidade()
+AGS -> AGR : save(agendamento)
+activate AGR
+AGR -> DB : INSERT INTO agendamentos(...)
+activate DB
+DB --> AGR : agendamentoId
+deactivate DB
+AGR --> AGS : Agendamento
+deactivate AGR
+AGS -> NTS : enviarConfirmacao(clienteId, agendamento)
+activate NTS
+NTS --> AGS : ok
+deactivate NTS
+AGS --> CTR : Agendamento
+deactivate AGS
+CTR --> CLI : 201 CREATED: Agendamento
+deactivate CTR
+
+deactivate CLI
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml DE-Atendimento
+
+title Diagrama de Estados — Atendimento
+
+skinparam backgroundColor white
+skinparam stateBorderColor #6c8ebf
+skinparam stateBackgroundColor #dae8fc
+
+[*] -down-> ABERTO : Profissional inicia atendimento /\nSistema registra hora início
+
+state ABERTO {
+  [*] -down-> ClienteRecebido
+  ClienteRecebido : Cliente recebido\npelo profissional
+}
+
+ABERTO -down-> EM_EXECUCAO : Profissional inicia serviço /\nServiços registrados no sistema
+
+state EM_EXECUCAO {
+  [*] -down-> ServicoEmAndamento
+  ServicoEmAndamento -down-> ServicoAdicional : Profissional adiciona\nserviço extra
+  ServicoAdicional -down-> ServicoEmAndamento : Serviço extra registrado
+  ServicoEmAndamento -down-> ServicoConcluido : Todos os serviços realizados
+}
+
+EM_EXECUCAO -right-> INTERROMPIDO : Problema durante execução /\nMotivo registrado
+
+INTERROMPIDO -left-> EM_EXECUCAO : Problema resolvido /\nAtendimento retomado
+INTERROMPIDO -down-> CANCELADO : Atendimento não retomado /\nCliente notificado
+
+EM_EXECUCAO -down-> FINALIZADO : Profissional finaliza /\nSistema registra hora fim\nValor total calculado
+
+FINALIZADO -down-> AGUARDANDO_PAGAMENTO : Encaminhado para\npagamento na recepção
+
+AGUARDANDO_PAGAMENTO -down-> PAGO : Pagamento registrado /\nComprovante emitido
+
+AGUARDANDO_PAGAMENTO -right-> CANCELADO : Pagamento não efetuado
+
+PAGO -down-> [*]
+CANCELADO -down-> [*]
+
+@enduml

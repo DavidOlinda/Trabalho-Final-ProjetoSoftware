@@ -1,0 +1,39 @@
+@startuml DE-Profissional
+
+title Diagrama de Estados — Profissional
+
+skinparam backgroundColor white
+skinparam stateBorderColor #6c8ebf
+skinparam stateBackgroundColor #dae8fc
+
+[*] -down-> CADASTRADO : Administrador cadastra profissional /\nDados validados no sistema
+
+CADASTRADO -down-> ATIVO : Administrador ativa /\nProfissional liberado para agendamentos
+
+state ATIVO {
+  [*] -down-> DISPONIVEL
+  DISPONIVEL : Sem agendamentos\nno horário atual
+  DISPONIVEL -right-> OCUPADO : Inicia atendimento /\nHorário bloqueado
+  OCUPADO : Atendimento\nem andamento
+  OCUPADO -left-> DISPONIVEL : Finaliza atendimento /\nHorário liberado
+}
+
+ATIVO -right-> EM_FERIAS : Administrador registra férias /\nAgendamentos bloqueados
+
+state EM_FERIAS {
+  [*] -down-> FeriasAgendadas
+  FeriasAgendadas : Período de férias\nregistrado no sistema
+}
+
+EM_FERIAS -left-> ATIVO : Retorno das férias /\nAgendamentos liberados
+
+ATIVO -down-> SUSPENSO : Administrador suspende /\nMotivo registrado\nAgendamentos bloqueados
+
+SUSPENSO -up-> ATIVO : Administrador reativa /\nAgendamentos liberados
+SUSPENSO -down-> INATIVO : Administrador desativa /\nHistórico mantido
+
+ATIVO -right-> INATIVO : Administrador desativa /\nAgendamentos futuros cancelados
+
+INATIVO -down-> [*]
+
+@enduml

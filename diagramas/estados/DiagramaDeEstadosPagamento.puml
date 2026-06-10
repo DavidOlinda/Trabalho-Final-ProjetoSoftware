@@ -1,0 +1,41 @@
+@startuml DE-Pagamento
+
+title Diagrama de Estados — Pagamento
+
+skinparam backgroundColor white
+skinparam stateBorderColor #6c8ebf
+skinparam stateBackgroundColor #dae8fc
+
+[*] -down-> PENDENTE : Atendimento concluído /\nValor total calculado
+
+state PENDENTE {
+  [*] -down-> AguardandoPagamento
+  AguardandoPagamento : Aguardando forma\nde pagamento
+}
+
+PENDENTE -down-> EM_PROCESSAMENTO : Recepcionista informa\nforma de pagamento
+
+state EM_PROCESSAMENTO {
+  [*] -down-> ValidandoPagamento
+  ValidandoPagamento -down-> ProcessandoTransacao : Dados validados
+}
+
+EM_PROCESSAMENTO -down-> APROVADO : Transação aprovada /\nRecibo gerado\nComprovante enviado ao cliente
+
+EM_PROCESSAMENTO -right-> RECUSADO : Transação recusada /\nCliente notificado
+
+RECUSADO -left-> EM_PROCESSAMENTO : Cliente tenta\noutra forma de pagamento
+
+APROVADO -down-> ESTORNADO : Cliente solicita estorno /\nAdministrador aprova
+
+state ESTORNADO {
+  [*] -down-> EstornoEmAnalise
+  EstornoEmAnalise -down-> EstornoProcessado : Administrador confirma estorno
+}
+
+ESTORNADO -down-> [*] : Valor devolvido ao cliente
+APROVADO -right-> [*] : Pagamento finalizado
+RECUSADO -down-> CANCELADO : Limite de tentativas atingido
+CANCELADO -down-> [*]
+
+@enduml

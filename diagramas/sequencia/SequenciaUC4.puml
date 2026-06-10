@@ -1,0 +1,114 @@
+@startuml SD-UC04-ConsultarHistoricoRelatorios
+
+title UC-04: Consultar Histórico e Relatórios
+
+actor "Cliente" as CLI
+actor "Administrador" as ADM
+participant ":Interface\nWeb/App" as UI
+participant ":RelatorioController" as CTR
+participant ":HistoricoService" as HST
+participant ":RelatorioService" as REL
+participant ":ExportacaoService" as EXP
+database ":Banco de Dados" as DB
+
+activate CLI
+
+CLI -> UI : acessarAreaDoCliente()
+activate UI
+
+UI -> CTR : carregarHistoricoCliente(clienteId)
+activate CTR
+
+CTR -> HST : buscarHistorico(clienteId)
+activate HST
+
+HST -> DB : SELECT a.*, s.nome, p.nome, pg.valor, pg.forma_pagamento\nFROM agendamentos a\nJOIN servicos s ON s.id = a.servico_id\nJOIN profissionais p ON p.id = a.profissional_id\nJOIN pagamentos pg ON pg.agendamento_id = a.id\nWHERE a.cliente_id = :clienteId\nORDER BY a.data DESC
+activate DB
+DB --> HST : historicoCompleto
+deactivate DB
+
+HST --> CTR : historicoAtendimentos
+deactivate HST
+
+CTR --> UI : exibirHistorico(historicoAtendimentos)
+deactivate CTR
+
+UI --> CLI : histórico de atendimentos e pagamentos
+
+CLI -> UI : consultarAgendamentosFuturos(clienteId)
+UI -> CTR : buscarAgendamentosFuturos(clienteId)
+activate CTR
+
+CTR -> HST : listarProximosAgendamentos(clienteId)
+activate HST
+
+HST -> DB : SELECT * FROM agendamentos\nWHERE cliente_id = :clienteId\nAND data >= NOW()\nAND status = 'confirmado'\nORDER BY data ASC
+activate DB
+DB --> HST : proximosAgendamentos
+deactivate DB
+
+HST --> CTR : proximosAgendamentos
+deactivate HST
+
+CTR --> UI : exibirProximosAgendamentos(proximosAgendamentos)
+deactivate CTR
+
+UI --> CLI : próximos agendamentos confirmados
+deactivate CLI
+
+activate ADM
+ADM -> UI : acessarPainelRelatorios()
+
+ADM -> UI : gerarRelatorioFaturamento(dataInicio, dataFim)
+UI -> CTR : gerarRelatorioFaturamento(dataInicio, dataFim)
+activate CTR
+
+CTR -> REL : calcularFaturamento(dataInicio, dataFim)
+activate REL
+
+REL -> DB : SELECT SUM(pg.valor) as total,\nCOUNT(a.id) as atendimentos,\ns.nome as servico\nFROM pagamentos pg\nJOIN agendamentos a ON a.id = pg.agendamento_id\nJOIN servicos s ON s.id = a.servico_id\nWHERE pg.data_pagamento BETWEEN :inicio AND :fim\nGROUP BY s.nome
+activate DB
+DB --> REL : dadosFaturamento
+deactivate DB
+
+REL --> CTR : relatorioFaturamento
+deactivate REL
+
+CTR --> UI : exibirRelatorioFaturamento(relatorioFaturamento)
+deactivate CTR
+
+ADM -> UI : gerarRelatorioDesempenho(profissionalId, dataInicio, dataFim)
+UI -> CTR : gerarRelatorioDesempenho(profissionalId, dataInicio, dataFim)
+activate CTR
+
+CTR -> REL : calcularDesempenhoProfissional(profissionalId, dataInicio, dataFim)
+activate REL
+
+REL -> DB : SELECT COUNT(a.id) as total_atendimentos,\nSUM(pg.valor) as faturamento_gerado\nFROM agendamentos a\nJOIN pagamentos pg ON pg.agendamento_id = a.id\nWHERE a.profissional_id = :profissionalId\nAND a.data BETWEEN :inicio AND :fim\nAND a.status = 'concluido'
+activate DB
+DB --> REL : dadosDesempenho
+deactivate DB
+
+REL --> CTR : relatorioDesempenho
+deactivate REL
+
+CTR --> UI : exibirRelatorioDesempenho(relatorioDesempenho)
+deactivate CTR
+
+ADM -> UI : exportarRelatorio(formato)
+UI -> CTR : exportar(relatorio, formato)
+activate CTR
+
+CTR -> EXP : gerarArquivo(relatorio, formato)
+activate EXP
+EXP --> CTR : arquivoGerado(url)
+deactivate EXP
+
+CTR --> UI : disponibilizarDownload(url)
+deactivate CTR
+
+UI --> ADM : arquivo disponível para download
+deactivate UI
+deactivate ADM
+
+@enduml

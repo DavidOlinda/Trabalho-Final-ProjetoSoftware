@@ -1,0 +1,103 @@
+@startuml DSP-UC04-ConsultarHistoricoRelatorios
+
+title Diagrama de Sequência de Projeto — UC-04: Consultar Histórico e Relatórios
+
+skinparam linetype ortho
+
+actor "Cliente" as CLI
+actor "Administrador" as ADM
+participant "RelatorioController" as CTR
+participant "HistoricoService" as HST
+participant "RelatorioService" as RLS
+participant "ExportacaoService" as EXS
+participant "AgendamentoRepository" as AGR
+participant "PagamentoRepository" as PAR
+database "PostgreSQL" as DB
+
+activate CLI
+
+CLI -> CTR : GET /clientes/{id}/historico
+activate CTR
+CTR -> HST : buscarHistorico(clienteId)
+activate HST
+HST -> AGR : findHistoricoByCliente(clienteId)
+activate AGR
+AGR -> DB : SELECT a.*, s.nome, p.nome,\npg.valor, pg.forma_pagamento\nFROM agendamentos a\nJOIN servicos s ON s.id = a.servico_id\nJOIN profissionais p ON p.id = a.profissional_id\nJOIN pagamentos pg ON pg.agendamento_id = a.id\nWHERE a.cliente_id = :id\nORDER BY a.data DESC
+activate DB
+DB --> AGR : List<Agendamento>
+deactivate DB
+AGR --> HST : List<Agendamento>
+deactivate AGR
+HST --> CTR : List<Agendamento>
+deactivate HST
+CTR --> CLI : 200 OK: List<Agendamento>
+deactivate CTR
+
+CLI -> CTR : GET /clientes/{id}/agendamentos/futuros
+activate CTR
+CTR -> HST : buscarAgendamentosFuturos(clienteId)
+activate HST
+HST -> AGR : findFuturosByCliente(clienteId)
+activate AGR
+AGR -> DB : SELECT * FROM agendamentos\nWHERE cliente_id = :id\nAND data >= NOW()\nAND status = 'CONFIRMADO'\nORDER BY data ASC
+activate DB
+DB --> AGR : List<Agendamento>
+deactivate DB
+AGR --> HST : List<Agendamento>
+deactivate AGR
+HST --> CTR : List<Agendamento>
+deactivate HST
+CTR --> CLI : 200 OK: List<Agendamento>
+deactivate CTR
+
+deactivate CLI
+
+activate ADM
+
+ADM -> CTR : GET /relatorios/faturamento\n?dataInicio={}&dataFim={}
+activate CTR
+CTR -> RLS : gerarFaturamento(dataInicio, dataFim)
+activate RLS
+RLS -> PAR : findFaturamentoByPeriodo(dataInicio, dataFim)
+activate PAR
+PAR -> DB : SELECT SUM(pg.valor) as total,\nCOUNT(a.id) as atendimentos,\ns.nome as servico\nFROM pagamentos pg\nJOIN agendamentos a\nON a.id = pg.agendamento_id\nJOIN servicos s\nON s.id = a.servico_id\nWHERE pg.data BETWEEN :inicio AND :fim\nGROUP BY s.nome
+activate DB
+DB --> PAR : RelatorioFaturamento
+deactivate DB
+PAR --> RLS : RelatorioFaturamento
+deactivate PAR
+RLS --> CTR : RelatorioFaturamento
+deactivate RLS
+CTR --> ADM : 200 OK: RelatorioFaturamento
+deactivate CTR
+
+ADM -> CTR : GET /relatorios/desempenho\n?profissionalId={}&dataInicio={}&dataFim={}
+activate CTR
+CTR -> RLS : gerarDesempenho(profissionalId, dataInicio, dataFim)
+activate RLS
+RLS -> AGR : findDesempenhoByProfissional\n(profissionalId, dataInicio, dataFim)
+activate AGR
+AGR -> DB : SELECT COUNT(a.id) as atendimentos,\nSUM(pg.valor) as faturamento\nFROM agendamentos a\nJOIN pagamentos pg\nON pg.agendamento_id = a.id\nWHERE a.profissional_id = :id\nAND a.data BETWEEN :inicio AND :fim\nAND a.status = 'CONCLUIDO'
+activate DB
+DB --> AGR : RelatorioDesempenho
+deactivate DB
+AGR --> RLS : RelatorioDesempenho
+deactivate AGR
+RLS --> CTR : RelatorioDesempenho
+deactivate RLS
+CTR --> ADM : 200 OK: RelatorioDesempenho
+deactivate CTR
+
+ADM -> CTR : GET /relatorios/{id}/exportar?formato={pdf|csv}
+activate CTR
+CTR -> EXS : exportar(relatorio, formato)
+activate EXS
+EXS -> EXS : gerarArquivo(relatorio, formato)
+EXS --> CTR : arquivoUrl
+deactivate EXS
+CTR --> ADM : 200 OK: arquivoUrl
+deactivate CTR
+
+deactivate ADM
+
+@enduml

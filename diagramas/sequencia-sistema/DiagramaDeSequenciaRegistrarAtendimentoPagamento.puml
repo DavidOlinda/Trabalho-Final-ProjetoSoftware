@@ -1,0 +1,133 @@
+@startuml DSP-UC03-RegistrarAtendimentoPagamento
+
+title Diagrama de Sequência de Projeto — UC-03: Registrar Atendimento e Pagamento
+
+skinparam linetype ortho
+
+actor "Profissional" as PRO
+actor "Recepcionista" as REC
+participant "AtendimentoController" as CTR
+participant "AtendimentoService" as ATS
+participant "AgendamentoService" as AGS
+participant "PagamentoService" as PAS
+participant "NotificacaoService" as NTS
+participant "AtendimentoRepository" as ATR
+participant "AgendamentoRepository" as AGR
+participant "PagamentoRepository" as PAR
+database "PostgreSQL" as DB
+
+activate PRO
+
+PRO -> CTR : GET /agendamentos?profissionalId={id}&data={data}
+activate CTR
+CTR -> AGS : listarAgendamentosDoDia(profissionalId, data)
+activate AGS
+AGS -> AGR : findByProfissionalAndData(profissionalId, data)
+activate AGR
+AGR -> DB : SELECT * FROM agendamentos\nWHERE profissional_id = :id\nAND DATE(data) = :data\nAND status = 'confirmado'
+activate DB
+DB --> AGR : List<Agendamento>
+deactivate DB
+AGR --> AGS : List<Agendamento>
+deactivate AGR
+AGS --> CTR : List<Agendamento>
+deactivate AGS
+CTR --> PRO : 200 OK: List<Agendamento}
+deactivate CTR
+
+PRO -> CTR : PATCH /agendamentos/{id}/iniciar
+activate CTR
+CTR -> ATS : iniciarAtendimento(agendamentoId)
+activate ATS
+ATS -> AGR : updateStatus(agendamentoId, EM_ANDAMENTO)
+activate AGR
+AGR -> DB : UPDATE agendamentos\nSET status = 'EM_ANDAMENTO',\nhora_inicio = NOW()\nWHERE id = :id
+activate DB
+DB --> AGR : ok
+deactivate DB
+AGR --> ATS : ok
+deactivate AGR
+ATS -> ATR : save(atendimento)
+activate ATR
+ATR -> DB : INSERT INTO atendimentos(...)
+activate DB
+DB --> ATR : atendimentoId
+deactivate DB
+ATR --> ATS : Atendimento
+deactivate ATR
+ATS --> CTR : Atendimento
+deactivate ATS
+CTR --> PRO : 200 OK: Atendimento
+deactivate CTR
+
+PRO -> CTR : POST /atendimentos/{id}/servicos\n{servicosIds, observacoes}
+activate CTR
+CTR -> ATS : registrarServicos(atendimentoId, servicosIds, observacoes)
+activate ATS
+ATS -> ATS : calcularValorTotal(servicosIds)
+ATS -> ATR : saveServicos(atendimentoId, servicosIds)
+activate ATR
+ATR -> DB : INSERT INTO atendimento_servicos(...)
+activate DB
+DB --> ATR : ok
+deactivate DB
+ATR --> ATS : ok
+deactivate ATR
+ATS --> CTR : valorTotal
+deactivate ATS
+CTR --> PRO : 200 OK: valorTotal
+deactivate CTR
+
+PRO -> CTR : PATCH /atendimentos/{id}/finalizar
+activate CTR
+CTR -> ATS : finalizarAtendimento(atendimentoId)
+activate ATS
+ATS -> ATR : updateStatus(atendimentoId, CONCLUIDO)
+activate ATR
+ATR -> DB : UPDATE atendimentos\nSET hora_fim = NOW()\nWHERE id = :id
+activate DB
+DB --> ATR : ok
+deactivate DB
+ATR --> ATS : ok
+deactivate ATR
+ATS -> AGR : updateStatus(agendamentoId, CONCLUIDO)
+activate AGR
+AGR -> DB : UPDATE agendamentos\nSET status = 'CONCLUIDO'\nWHERE id = :id
+activate DB
+DB --> AGR : ok
+deactivate DB
+AGR --> ATS : ok
+deactivate AGR
+ATS --> CTR : Atendimento
+deactivate ATS
+CTR --> PRO : 200 OK: Atendimento
+deactivate CTR
+
+deactivate PRO
+
+activate REC
+REC -> CTR : POST /pagamentos\n{agendamentoId, formaPagamento, valor}
+activate CTR
+CTR -> PAS : processarPagamento(agendamentoId, formaPagamento, valor)
+activate PAS
+PAS -> PAS : validarValor(valor, valorTotal)
+PAS -> PAR : save(pagamento)
+activate PAR
+PAR -> DB : INSERT INTO pagamentos(...)
+activate DB
+DB --> PAR : pagamentoId
+deactivate DB
+PAR --> PAS : Pagamento
+deactivate PAR
+PAS -> NTS : enviarComprovante(clienteId, pagamento)
+activate NTS
+NTS --> PAS : ok
+deactivate NTS
+PAS --> CTR : Pagamento
+deactivate PAS
+CTR --> REC : 201 CREATED: Pagamento
+deactivate CTR
+
+deactivate REC
+
+@enduml

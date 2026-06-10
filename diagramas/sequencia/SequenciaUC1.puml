@@ -1,0 +1,106 @@
+@startuml SD-UC01-AgendarServico
+
+title UC-01: Agendar Serviço
+
+actor "Cliente" as CLI
+participant ":Interface\nWeb/App" as UI
+participant ":AgendamentoController" as CTR
+participant ":ServicoService" as SVC
+participant ":ProfissionalService" as PRF
+participant ":AgendamentoService" as AGD
+participant ":NotificacaoService" as NTF
+database ":Banco de Dados" as DB
+
+activate CLI
+
+CLI -> UI : acessarPaginaAgendamento()
+activate UI
+
+UI -> CTR : carregarServicos()
+activate CTR
+
+CTR -> SVC : listarServicosAtivos()
+activate SVC
+
+SVC -> DB : SELECT * FROM servicos WHERE ativo = true
+activate DB
+DB --> SVC : listaServicos
+deactivate DB
+
+SVC --> CTR : listaServicos
+deactivate SVC
+
+CTR --> UI : exibirServicos(listaServicos)
+deactivate CTR
+
+UI --> CLI : tela com serviços disponíveis
+CLI -> UI : selecionarServico(servicoId)
+
+UI -> CTR : buscarProfissionaisDisponiveis(servicoId)
+activate CTR
+
+CTR -> PRF : listarProfissionaisPorServico(servicoId)
+activate PRF
+
+PRF -> DB : SELECT p.* FROM profissionais p\nJOIN profissional_servico ps ON ps.profissional_id = p.id\nWHERE ps.servico_id = :servicoId
+activate DB
+DB --> PRF : listaProfissionais
+deactivate DB
+
+PRF --> CTR : listaProfissionais
+deactivate PRF
+
+CTR --> UI : exibirProfissionais(listaProfissionais)
+deactivate CTR
+
+UI --> CLI : tela com profissionais disponíveis
+CLI -> UI : selecionarProfissional(profissionalId)
+
+UI -> CTR : buscarHorariosDisponiveis(profissionalId, servicoId)
+activate CTR
+
+CTR -> AGD : verificarDisponibilidade(profissionalId, servicoId)
+activate AGD
+
+AGD -> DB : SELECT horarios FROM agenda\nWHERE profissional_id = :id\nAND status = 'disponivel'
+activate DB
+DB --> AGD : horariosLivres
+deactivate DB
+
+AGD --> CTR : horariosLivres
+deactivate AGD
+
+CTR --> UI : exibirCalendario(horariosLivres)
+deactivate CTR
+
+UI --> CLI : calendário com horários livres
+CLI -> UI : selecionarHorario(data, hora)
+CLI -> UI : confirmarAgendamento(clienteId, servicoId, profissionalId, data, hora)
+
+UI -> CTR : criarAgendamento(dadosAgendamento)
+activate CTR
+
+CTR -> AGD : salvarAgendamento(dadosAgendamento)
+activate AGD
+
+AGD -> DB : INSERT INTO agendamentos(...)
+activate DB
+DB --> AGD : agendamentoId
+deactivate DB
+
+AGD --> CTR : agendamentoCriado(agendamentoId)
+deactivate AGD
+
+CTR -> NTF : enviarConfirmacao(clienteId, agendamentoId)
+activate NTF
+NTF --> CTR : notificacaoEnviada
+deactivate NTF
+
+CTR --> UI : exibirConfirmacao(agendamentoId)
+deactivate CTR
+
+UI --> CLI : tela de confirmação com código do agendamento
+deactivate UI
+deactivate CLI
+
+@enduml

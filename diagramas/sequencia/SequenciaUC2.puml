@@ -1,0 +1,116 @@
+@startuml SD-UC02-GerenciarProfissionaisServicos
+
+title UC-02: Gerenciar Profissionais e Serviços
+
+actor "Administrador" as ADM
+participant ":Interface\nAdmin" as UI
+participant ":AdminController" as CTR
+participant ":ProfissionalService" as PRF
+participant ":ServicoService" as SVC
+participant ":VinculoService" as VIN
+database ":Banco de Dados" as DB
+
+activate ADM
+
+ADM -> UI : acessarPainelAdministrativo()
+activate UI
+UI --> ADM : painel administrativo
+
+ADM -> UI : preencherFormularioProfissional\n(nome, cpf, especialidades, horarios)
+UI -> CTR : cadastrarProfissional(dadosProfissional)
+activate CTR
+
+CTR -> PRF : validarDados(dadosProfissional)
+activate PRF
+PRF --> CTR : dadosValidos
+deactivate PRF
+
+CTR -> PRF : salvarProfissional(dadosProfissional)
+activate PRF
+
+PRF -> DB : INSERT INTO profissionais(nome, cpf, ...)
+activate DB
+DB --> PRF : profissionalId
+deactivate DB
+
+PRF --> CTR : profissionalCriado(profissionalId)
+deactivate PRF
+
+CTR --> UI : exibirSucesso("Profissional cadastrado")
+deactivate CTR
+
+ADM -> UI : preencherFormularioServico\n(nome, descricao, duracao, preco)
+UI -> CTR : cadastrarServico(dadosServico)
+activate CTR
+
+CTR -> SVC : validarDados(dadosServico)
+activate SVC
+SVC --> CTR : dadosValidos
+deactivate SVC
+
+CTR -> SVC : salvarServico(dadosServico)
+activate SVC
+
+SVC -> DB : INSERT INTO servicos(nome, descricao, duracao, preco)
+activate DB
+DB --> SVC : servicoId
+deactivate DB
+
+SVC --> CTR : servicoCriado(servicoId)
+deactivate SVC
+
+CTR --> UI : exibirSucesso("Serviço cadastrado")
+deactivate CTR
+
+ADM -> UI : vincularServicoProfissional(profissionalId, servicoId)
+UI -> CTR : criarVinculo(profissionalId, servicoId)
+activate CTR
+
+CTR -> VIN : verificarVinculoExistente(profissionalId, servicoId)
+activate VIN
+
+VIN -> DB : SELECT * FROM profissional_servico\nWHERE profissional_id = :pid AND servico_id = :sid
+activate DB
+DB --> VIN : resultado
+deactivate DB
+
+VIN --> CTR : vinculoNaoExiste
+deactivate VIN
+
+CTR -> VIN : salvarVinculo(profissionalId, servicoId)
+activate VIN
+
+VIN -> DB : INSERT INTO profissional_servico(profissional_id, servico_id)
+activate DB
+DB --> VIN : ok
+deactivate DB
+
+VIN --> CTR : vinculoCriado
+deactivate VIN
+
+CTR --> UI : exibirSucesso("Vínculo criado com sucesso")
+deactivate CTR
+
+ADM -> UI : atualizarPrecoServico(servicoId, novoPreco)
+UI -> CTR : atualizarPreco(servicoId, novoPreco)
+activate CTR
+
+CTR -> SVC : atualizarPreco(servicoId, novoPreco)
+activate SVC
+
+SVC -> DB : UPDATE servicos SET preco = :novoPreco\nWHERE id = :servicoId
+activate DB
+DB --> SVC : ok
+deactivate DB
+
+SVC --> CTR : precoAtualizado
+deactivate SVC
+
+CTR --> UI : exibirSucesso("Preço atualizado")
+deactivate CTR
+
+UI --> ADM : painel atualizado
+deactivate UI
+deactivate ADM
+
+@enduml
